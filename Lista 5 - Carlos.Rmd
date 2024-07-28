@@ -1,0 +1,85 @@
+---
+title: "Lista 5"
+author: "Carlos Jacomes"
+date: "2024-07-28"
+output: html_document
+---
+
+# Testando a hipótese
+
+Candidaturas de candidatos não branco(a)s se concentram nas classes mais baixas e de brancos se concentram nas classes mais altas.
+
+# Por que essa hipótese foi escolhida
+
+Pensando no trabalho final da disciplina, a ideia de testar a hipótese descrita tem por objetivo contribuir com a apresentação, a partir da classificação das ocupações dos candidatos, fatores que explicam a continuidade da baixa representação de candidaturas pretas à Câmara dos Deputados.
+
+# Possível tema do trabalho final
+
+Por meio da análise de dados quantitativos, a proposta buscará identificar se existe relação entre ocupação e classe na eleição dos deputados federais eleitos em 2022 para a Câmara dos Deputados.
+
+# Escolha do teste Qui-Quadrado
+
+Levando em conta que o objetivo é mensurar diferença na distribuição da variável "Classificação da Ocupação" em relação a variável "Cor/Raça", a escolha do teste tende a facilitar o calculo e a interpretação. O teste confirmou que há uma associação significativa entre "cor/raça" dos candidatos e a "Classificação da ocupação".
+
+# Potencialidades
+
+O teste é mais tranquilo de ser aplicado, facilitando o cálculo e a interpetação dos resultados. Além disso, explicita de forma clara as relações entre as variáveis categóricas.
+
+# Limitações
+
+Pode apresentar imprecisão quando as células apresetarrem frequências esperadas menores que 5. se houver categorias pouco usuais ou amostra pequena, as frequências esperadas podem ser baixas, tornando o teste impreciso.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(tidyverse)
+library(vcd)
+#Carregar dados
+classificacao <- read_excel("C:/Users/User/OneDrive/Documentos/metodos/classificacao.xlsx")
+head(classificacao)
+
+# Remover linhas com valores ausentes
+classificacao <- classificacao %>% 
+  drop_na(`Cor/raça`, `Classificação da ocupação`)
+
+# Renomear as colunas para remover caracteres especiais
+classificacao <- classificacao %>%
+  rename(Cor_raca = `Cor/raça`, Classificacao_ocupacao = `Classificação da ocupação`)
+
+# Tabela de contigência
+tabela_contingencia <- table(classificacao$Cor_raca, classificacao$Classificacao_ocupacao)
+print(tabela_contingencia)
+
+#teste qui-quadrado
+teste_chi <- chisq.test(tabela_contingencia)
+print(teste_chi)
+
+#Grpafico de associação
+assoc(tabela_contingencia, shade = TRUE, legend = TRUE)
+
+# Calcular os percentuais
+classificacao_percent <- classificacao %>%
+  count(Cor_raca, Classificacao_ocupacao) %>%
+  group_by(Cor_raca) %>%
+  mutate(percentage = n / sum(n) * 100)
+```
+
+# Gráfico
+
+```{r}
+
+#Gráfico de barras empilhadas
+ggplot(classificacao_percent, aes(x = Cor_raca, y = n, fill = Classificacao_ocupacao)) +
+  geom_bar(stat = "identity", position = "fill") +
+  coord_flip() +
+  scale_fill_manual(values = c("Alta" = "blue", "Baixa" = "brown", "Média Alta" = "black", "Média Baixa" = "orange", "Outras" = "grey")) +
+   geom_text(aes(label = paste0(round(percentage, 1), "%")), 
+            position = position_fill(vjust = 0.5), 
+            color = "white", 
+            size = 3) +
+  labs(title = "Distribuição das Classes Sociais por Cor/Raça",
+       x = "Cor/Raça",
+       y = "Proporção",
+       fill = "Classificação da Ocupação") +
+  theme_minimal()
+```
